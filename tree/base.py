@@ -23,45 +23,51 @@ class Node:
     children: dict
     output: str
 
-
-def gain()->str:
-    pass
-
-def construct_tree(X,y,attr,max_depth,cur_depth):
-    max_gain_attr=""
-    max_gain=0
-
-    if(max_depth==cur_depth):
-        output=y.value_counts().idxmax()
-        n1=Node(atrribute=attr,isLeaf=True,children={},output=output)
-    if(len(attr)==0):
-        output=y.value_counts().idxmax()
-        n1=Node(atrribute=None,isLeaf=True,output=output,children={})
-
-    for a in attr:
-        
-        g=information_gain(y,attr)
-        if(max_gain<g):
-            max_gain=g
-            max_gain_attr=a
-    
-    children_name=X[max_gain_attr].unique()
-    children={}
-    for c in children_name:
-       
-        index = X.groupby([max_gain_attr]).groups[c].tolist()
-        y_mod=y.iloc[index]
-        children[c]=construct_tree(X.groupby([max_gain_attr]).get_group(c),y_mod,attr.drop(labels=[a]),max_depth,cur_depth+1)
-    n1=Node(atrribute=max_gain_attr,isLeaf=False,children=children,output=None)
-    return n1
-
 @dataclass
 class DecisionTree:
     # criterion: Literal["information_gain", "gini_index"]  # criterion won't be used for regression
     max_depth: int  # The maximum depth the tree can grow to
+    root = Node('hello', True, {}, 'hello')
 
     def get_attributes_X(self, X: pd.DataFrame) -> list:
         return X.columns.tolist()
+
+    def construct_tree(self, X, y, attr, cur_depth):
+        max_gain_attr = ""
+        max_gain = 0
+        print(attr)
+        if (self.max_depth == cur_depth):
+            output = y.value_counts().idxmax()
+            n1 = Node(atrribute=attr, isLeaf=True, children={}, output=output)
+            return n1
+        if (len(attr) == 0):
+            output = y.value_counts().idxmax()
+            n1 = Node(atrribute=None, isLeaf=True, output=output, children={})
+            return n1
+
+        for a in attr:
+            g = information_gain(y, pd.Series(X[a]))
+            if (max_gain < g):
+                max_gain = g
+                max_gain_attr = a
+
+        # print()
+        # print('max_gain', max_gain)
+        children_name = X[max_gain_attr].unique()
+
+        # print('maximum gain',max_gain_attr)
+        children = {}
+        for c in children_name:
+            index = X.groupby([max_gain_attr]).groups[c].tolist()
+            df_y = pd.DataFrame({'Y': y.values})
+            y_mod = df_y.iloc[index]
+            # print('index',index)
+            temp = attr.copy()
+            temp.remove(max_gain_attr)
+            children[c] = self.construct_tree(X.groupby([max_gain_attr]).get_group(c), pd.Series(df_y['Y']), temp, cur_depth + 1)
+
+        n1 = Node(atrribute=max_gain_attr, isLeaf=False, children=children, output=None)
+        return n1
 
     def fit(self, X: pd.DataFrame, y: pd.Series) -> None:
         """
@@ -69,8 +75,9 @@ class DecisionTree:
 
         """
         
-        attributes=["outlook","humidity","rain"]
-        construct_tree(X,y,attributes,max_depth=self.max_depth,cur_depth=0);
+        # attributes=["outlook","humidity","rain"]
+        attributes = self.get_attributes_X(X)
+        self.root = self.construct_tree(X,y,attributes,-1);
 
     def predict(self, X: pd.DataFrame) -> pd.Series:
         """
@@ -105,7 +112,6 @@ def test_decision_tree():
                      'High', 'Normal', 'High'],
         'Wind': ['Weak', 'Strong', 'Weak', 'Weak', 'Weak', 'Strong', 'Strong', 'Weak', 'Weak', 'Weak', 'Strong',
                  'Strong', 'Weak', 'Strong'],
-        'height': [1,3,4,5,6,7,8,9,10,11,12,13,14,15]
         })
 
     y = pd.DataFrame({
@@ -123,6 +129,11 @@ def test_decision_tree():
     # print(tree1.get_attributes_X(x));
     # print(y.groupby(['PlayTennis']).groups)
 
-    print('entropy: ',entropy(y["PlayTennis"]))
-    print('Gini: ', gini_index(y["PlayTennis"]))
-    print(information_gain(pd.Series(x['Outlook']), pd.Series(y['PlayTennis'])))
+    # print('entropy: ',entropy(y["PlayTennis"]))
+    # print('Gini: ', gini_index(y["PlayTennis"]))
+    # print(information_gain(pd.Series(x['Outlook']), pd.Series(y['PlayTennis'])))
+
+    tree1 = DecisionTree(max_depth=10)
+    tree1.fit(x,pd.Series(y['PlayTennis']))
+    print(tree1.root)
+

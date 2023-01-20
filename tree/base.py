@@ -51,7 +51,7 @@ class DecisionTree:
                 max_gain = g
                 max_gain_attr = a
 
-        # print()
+        print()
         # print('max_gain', max_gain)
         children_name = X[max_gain_attr].unique()
 

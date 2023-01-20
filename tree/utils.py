@@ -27,9 +27,14 @@ def information_gain(Y: pd.Series, attr: pd.Series) -> float:
     """
     Function to calculate the information gain
     """
-    entropy_Y = entropy(Y)
-    # df_attr = pd.DataFrame({:Y, 'attr':attr})
-    index = attr.groupby(["Outlook"]).groups['Overcast'].tolist()
-    print(index)
-    new_x = y.iloc[index]
-    print(new_x)
+    info_gain = entropy(Y)
+    df_attr = pd.DataFrame({'attr':attr.values})
+    df_Y = pd.DataFrame({'Y':Y.values})
+
+    for grp in df_attr.groupby(['attr']).groups.keys():
+        index = df_attr.groupby(['attr']).groups[grp].tolist()
+        new_Y = df_Y.iloc[index]
+        entropy_new_Y = entropy(pd.Series(new_Y['Y']))
+        info_gain = info_gain - len(new_Y)/len(Y) * entropy_new_Y
+
+    return info_gain

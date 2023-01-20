@@ -72,12 +72,16 @@ def test_decision_tree():
     })
     # print(x)
 
-    index = x.groupby(["Outlook"]).groups['Overcast'].tolist()
-    print(index)
-    new_x = y.iloc[index]
-    print(new_x)
+    # index = x.groupby(["Outlook"]).groups['Overcast'].tolist()
+    # print(index)
+    # new_x = y.iloc[index]
+    # print(new_x)
 
-    # print('entropy: ',entropy(y["PlayTennis"]))
-    # print('Gini: ', gini_index(y["PlayTennis"]))
-    tree1 = DecisionTree(max_depth=2)
+
+    # tree1 = DecisionTree(max_depth=2)
     # print(tree1.get_attributes_X(x));
+    # print(y.groupby(['PlayTennis']).groups)
+
+    print('entropy: ',entropy(y["PlayTennis"]))
+    print('Gini: ', gini_index(y["PlayTennis"]))
+    print(information_gain(pd.Series(x['Outlook']), pd.Series(y['PlayTennis'])))

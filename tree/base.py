@@ -178,13 +178,23 @@ class DecisionTree:
         """
         pass
 
+    def print_tree_discrete_discrete(self, node, indentation_value, prefix):
+        if node.isLeaf == True:
+            print('    '*indentation_value,prefix,'Value: ', node.output)
+            return
+
+        for key, value in node.children.items():
+            print('    ' * indentation_value, prefix, '?', '(', node.atrribute, ' ', '=', ' ', key, ')')
+            self.print_tree_discrete_discrete(node.children[key], indentation_value + 1, 'Y: ')
+
     def print_tree_real_discrete(self, node, indentation_value, prefix):
-        if (node.isLeaf == True):
+        if node.isLeaf == True:
             print('    '*indentation_value,prefix,'Value: ',node.output)
             return
         print('    '*indentation_value,prefix,'?','(',node.atrribute,' ','<=',' ',node.split_value,')')
         self.print_tree_real_discrete(node.children['less_than_split_value'], indentation_value+1,'Y: ')
         self.print_tree_real_discrete(node.children['greater_than_split_value'], indentation_value+1,'N: ')
+
 
     def plot(self) -> None:
         """
@@ -221,6 +231,7 @@ def test_decision_tree():
     tree1 = DecisionTree(max_depth=10)
     tree1.fit(x, pd.Series(y['PlayTennis']))
     print(tree1.root)
+    tree1.print_tree_discrete_discrete(tree1.root, 0, '')
 
 def test_decision_tree_real_discrete():
     x1 = np.random.uniform(0, 10, 100)
@@ -248,5 +259,6 @@ def test_get_split_tree_real_discrete():
     tree2.print_tree_real_discrete(tree2.root, 0, '')
     # print(tree2.construct_tree_real_discrete(x, pd.Series(y['y']), ['x1','x2'],0))
 
-test_decision_tree_real_discrete()
+test_decision_tree()
+# test_decision_tree_real_discrete()
 # test_get_split_tree_real_discrete()

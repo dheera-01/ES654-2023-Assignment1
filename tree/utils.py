@@ -42,16 +42,25 @@ def information_gain(Y: pd.Series, attr: pd.Series) -> float:
 
 
 def variance_reduction(Y:pd.Series,attr: pd.Series)->float:
+
+    if(len(Y)<=1):
+        return 0
     intial_std=Y.std()*Y.std()
     inital_var=intial_std*intial_std
+
+
     df_attr = pd.DataFrame({'attr': attr.values})
     df_Y = pd.DataFrame({'Y': Y.values})
 
     for grp in df_attr.groupby(['attr']).groups.keys():
         index = df_attr.groupby(['attr']).groups[grp].tolist()
         new_Y = df_Y.iloc[index]
-        std_new_Y = pd.Series(new_Y['Y']).std()
-        variance_new_Y = std_new_Y*std_new_Y
-        inital_var = inital_var - len(new_Y) / len(Y) * variance_new_Y
+
+        if(len(new_Y["Y"])>1):
+            std_new_Y = pd.Series(new_Y['Y']).std()
+            variance_new_Y = std_new_Y * std_new_Y
+
+            inital_var = inital_var - (len(new_Y) / len(Y)) * variance_new_Y
+
 
     return inital_var

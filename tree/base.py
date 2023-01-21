@@ -11,7 +11,7 @@ from typing import Literal
 
 import numpy as np
 import pandas as pd
-from tree.utils import entropy, information_gain, gini_index
+from tree.utils import entropy, information_gain, gini_index, variance_reduction
 
 import matplotlib.pyplot as plt
 
@@ -25,7 +25,7 @@ class Node:
     atrribute:str
     isLeaf:bool
     children: dict
-    output: str
+    output: str | int | float
     # split_value: 0.0 #Represents which value to compare sample[attribute]
 
 @dataclass
@@ -138,7 +138,7 @@ class DecisionTree:
                 max_gain = g
                 max_gain_attr = a
 
-        print('max_gain_attr', max_gain_attr)
+
 
         children_name = X[max_gain_attr].unique()
         children = {}
@@ -160,6 +160,54 @@ class DecisionTree:
         n1 = Node(atrribute=max_gain_attr, isLeaf=False, children=children, output=None)
         return n1
 
+    def construct_tree_discrete_real(self, X, y, attr, cur_depth):
+
+        max_var_red_attr = ""
+        max_var_red = float('-inf')
+
+        if (len(y)<2 or y.std() == 0.0):
+            output = y.mean()
+            n1 = Node(atrribute=attr, isLeaf=True, children={}, output=output)
+            return n1
+
+        if (self.max_depth == cur_depth):
+            output = y.mean()
+            n1 = Node(atrribute=attr, isLeaf=True, children={}, output=output)
+            return n1
+
+        if (len(attr) == 0):
+            output = y.mean()
+            n1 = Node(atrribute=None, isLeaf=True, output=output, children={})
+            return n1
+
+        for a in attr:
+            var = variance_reduction(y, pd.Series(X[a]))
+
+            if (max_var_red < var):
+                max_var_red = var
+                max_var_red_attr = a
+
+        children_name = X[max_var_red_attr].unique()
+
+        children = {}
+
+        for c in children_name:
+            index = X.groupby([max_var_red_attr]).groups[c].tolist()
+
+            df_y = pd.DataFrame({'Y': y.values})
+            y_mod = df_y.iloc[index]
+            y_mod = y_mod.reset_index(drop=True)
+            y_mod = pd.Series(y_mod['Y'])
+
+            x_mod = X.groupby([max_var_red_attr]).get_group(c).reset_index(drop=True)
+
+            temp = attr.copy()
+            temp.remove(max_var_red_attr)
+            children[c] = self.construct_tree_discrete_real(x_mod, y_mod, temp, cur_depth + 1)
+
+        n1 = Node(atrribute=max_var_red_attr, isLeaf=False, children=children, output=None)
+        return n1
+
     def fit(self, X: pd.DataFrame, y: pd.Series) -> None:
         """
         Function to train and construct the decision tree
@@ -167,7 +215,8 @@ class DecisionTree:
         
         # attributes=["outlook","humidity","rain"]
         attributes = self.get_attributes_X(X)
-        self.root = self.construct_tree(X,y,attributes,-1);
+        # self.root = self.construct_tree(X,y,attributes,-1);
+        self.root=self.construct_tree_discrete_real(X,y,attributes,0)
 
     def predict(self, X: pd.DataFrame) -> pd.Series:
         """
@@ -193,39 +242,59 @@ class DecisionTree:
         Where Y => Yes and N => No
         """
 
-def test_decision_tree():
-    """
-    Function to test the decision tree
-    """
-    x = pd.DataFrame({
-        'Outlook': ['Sunny', 'Sunny', 'Overcast', 'Rain', 'Rain', 'Rain', 'Overcast', 'Sunny', 'Sunny', 'Rain', 'Sunny',
-                    'Overcast', 'Overcast', 'Rain'],
-        'Temperature': ['Hot', 'Hot', 'Hot', 'Mild', 'Cool', 'Cool', 'Cool', 'Mild', 'Cool', 'Mild', 'Mild', 'Mild',
-                        'Hot', 'Mild'],
-        'Humidity': ['High', 'High', 'High', 'High', 'Normal', 'Normal', 'Normal', 'High', 'Normal', 'Normal', 'Normal',
-                     'High', 'Normal', 'High'],
-        'Wind': ['Weak', 'Strong', 'Weak', 'Weak', 'Weak', 'Strong', 'Strong', 'Weak', 'Weak', 'Weak', 'Strong',
-                 'Strong', 'Weak', 'Strong'],
-        })
+# def test_decision_tree():
+#     """
+#     Function to test the decision tree
+#     """
+#     x = pd.DataFrame({
+#         'Outlook': ['Sunny', 'Sunny', 'Overcast', 'Rain', 'Rain', 'Rain', 'Overcast', 'Sunny', 'Sunny', 'Rain', 'Sunny',
+#                     'Overcast', 'Overcast', 'Rain'],
+#         'Temperature': ['Hot', 'Hot', 'Hot', 'Mild', 'Cool', 'Cool', 'Cool', 'Mild', 'Cool', 'Mild', 'Mild', 'Mild',
+#                         'Hot', 'Mild'],
+#         'Humidity': ['High', 'High', 'High', 'High', 'Normal', 'Normal', 'Normal', 'High', 'Normal', 'Normal', 'Normal',
+#                      'High', 'Normal', 'High'],
+#         'Wind': ['Weak', 'Strong', 'Weak', 'Weak', 'Weak', 'Strong', 'Strong', 'Weak', 'Weak', 'Weak', 'Strong',
+#                  'Strong', 'Weak', 'Strong'],
+#         })
+#
+#     y = pd.DataFrame({
+#         'PlayTennis': ['No', 'No', 'Yes', 'Yes', 'Yes', 'No', 'Yes', 'No', 'Yes', 'Yes', 'Yes', 'Yes', 'Yes', 'No']
+#     })
+#
+#     tree1 = DecisionTree(max_depth=10)
+#     tree1.fit(x, pd.Series(y['PlayTennis']))
+#     print(tree1.root)
 
-    y = pd.DataFrame({
-        'PlayTennis': ['No', 'No', 'Yes', 'Yes', 'Yes', 'No', 'Yes', 'No', 'Yes', 'Yes', 'Yes', 'Yes', 'Yes', 'No']
-    })
+# def test_decision_tree_real_discrete():
+#     x1 = np.random.uniform(0, 10, 100)
+#     x2 = np.random.uniform(0, 10, 100)
+#     y = np.random.choice(['red', 'blue', 'green'], 100)
+#     x = pd.DataFrame({'x1': x1, 'x2': x2})
+#     y = pd.DataFrame({'y': y})
+#     print(x)
+#     print(y)
+#
+#     tree2 = DecisionTree(max_depth=2)
+#     print(tree2.get_split_attr_value(x,y,['x1','x2']))
 
-    tree1 = DecisionTree(max_depth=10)
-    tree1.fit(x, pd.Series(y['PlayTennis']))
+
+
+
+
+def test_decision_tree_discrete_real():
+    N = 30
+    P = 5
+    X = pd.DataFrame({i: pd.Series(np.random.randint(P, size=N), dtype="category") for i in range(5)})
+    y = pd.Series(np.random.randn(N))
+    column=["f1","f2","f3"]
+    lst=[[0,1,1,0,1],[1,0,1,0,0],[1,0,0,1,1]]
+    y=pd.Series([5.6,2.3,4.5,3.2,6.1])
+    X=pd.DataFrame({'f1':lst[0],'f2':lst[1],'f3':lst[2]})
+    tree1 = DecisionTree(max_depth=0)
+    print(X,y)
+    tree1.fit(X, y)
+    print(y.mean())
+    print()
     print(tree1.root)
 
-def test_decision_tree_real_discrete():
-    x1 = np.random.uniform(0, 10, 100)
-    x2 = np.random.uniform(0, 10, 100)
-    y = np.random.choice(['red', 'blue', 'green'], 100)
-    x = pd.DataFrame({'x1': x1, 'x2': x2})
-    y = pd.DataFrame({'y': y})
-    print(x)
-    print(y)
-
-    tree2 = DecisionTree(max_depth=2)
-    print(tree2.get_split_attr_value(x,y,['x1','x2']))
-
-test_decision_tree()
+test_decision_tree_discrete_real()

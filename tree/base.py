@@ -70,6 +70,7 @@ class DecisionTree:
         return rtr
 
     def construct_tree_real_discrete(self, X, y, attr, cur_depth):
+        print("hello")
         #notes
         #1. use the above function for finding the split
         #2. split and recursion for each child
@@ -109,21 +110,22 @@ class DecisionTree:
         # return n1
 
     def construct_tree(self, X, y, attr, cur_depth):
+        print()
+        print(attr)
         max_gain_attr = ""
-        max_gain = 0
+        max_gain = float('-inf')
 
-
-        if(entropy(y)==0):
+        if(entropy(y)==0.0):
             output = y.value_counts().idxmax()
-
-
             n1 = Node(atrribute=attr, isLeaf=True, children={}, output=output)
             return n1
+
         if (self.max_depth == cur_depth):
             output = y.value_counts().idxmax()
             n1 = Node(atrribute=attr, isLeaf=True, children={}, output=output)
             print(X)
             return n1
+
         if (len(attr) == 0):
             output = y.value_counts().idxmax()
             n1 = Node(atrribute=None, isLeaf=True, output=output, children={})
@@ -136,24 +138,24 @@ class DecisionTree:
                 max_gain = g
                 max_gain_attr = a
 
-        print()
-        # print('max_gain', max_gain)
-        children_name = X[max_gain_attr].unique()
+        print('max_gain_attr', max_gain_attr)
 
-        # print('maximum gain',max_gain_attr)
+        children_name = X[max_gain_attr].unique()
         children = {}
+
         for c in children_name:
             index = X.groupby([max_gain_attr]).groups[c].tolist()
-            # print(index)
-            df_y = pd.DataFrame({'Y': y.values})
-            # y_mod = df_y.iloc[index]
 
+            df_y = pd.DataFrame({'Y':y.values})
+            y_mod = df_y.iloc[index]
+            y_mod = y_mod.reset_index(drop=True)
+            y_mod = pd.Series(y_mod['Y'])
 
-
+            x_mod = X.groupby([max_gain_attr]).get_group(c).reset_index(drop=True)
 
             temp = attr.copy()
             temp.remove(max_gain_attr)
-            children[c] = self.construct_tree(X.groupby([max_gain_attr]).get_group(c), y, temp, cur_depth + 1)
+            children[c] = self.construct_tree(x_mod, y_mod, temp, cur_depth + 1)
 
         n1 = Node(atrribute=max_gain_attr, isLeaf=False, children=children, output=None)
         return n1
@@ -191,7 +193,6 @@ class DecisionTree:
         Where Y => Yes and N => No
         """
 
-
 def test_decision_tree():
     """
     Function to test the decision tree
@@ -210,25 +211,10 @@ def test_decision_tree():
     y = pd.DataFrame({
         'PlayTennis': ['No', 'No', 'Yes', 'Yes', 'Yes', 'No', 'Yes', 'No', 'Yes', 'Yes', 'Yes', 'Yes', 'Yes', 'No']
     })
-    # print(x)
-
-    # index = x.groupby(["Outlook"]).groups['Overcast'].tolist()
-    # print(index)
-    # new_x = y.iloc[index]
-    # print(new_x)
-
-
-    # tree1 = DecisionTree(max_depth=2)
-    # print(tree1.get_attributes_X(x));
-    # print(y.groupby(['PlayTennis']).groups)
-
-    # print('entropy: ',entropy(y["PlayTennis"]))
-    # print('Gini: ', gini_index(y["PlayTennis"]))
-    # print(information_gain(pd.Series(x['Outlook']), pd.Series(y['PlayTennis'])))
 
     tree1 = DecisionTree(max_depth=10)
-    tree1.fit(x,pd.Series(y['PlayTennis']))
-    print(tree1.root.children["Overcast"])
+    tree1.fit(x, pd.Series(y['PlayTennis']))
+    print(tree1.root)
 
 def test_decision_tree_real_discrete():
     x1 = np.random.uniform(0, 10, 100)
@@ -241,3 +227,5 @@ def test_decision_tree_real_discrete():
 
     tree2 = DecisionTree(max_depth=2)
     print(tree2.get_split_attr_value(x,y,['x1','x2']))
+
+test_decision_tree()

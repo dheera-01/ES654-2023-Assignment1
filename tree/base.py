@@ -11,10 +11,14 @@ from typing import Literal
 
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 from tree.utils import entropy, information_gain, gini_index
 
+import matplotlib.pyplot as plt
+
 np.random.seed(42)
+
+
+
 
 @dataclass
 class Node:
@@ -107,14 +111,23 @@ class DecisionTree:
     def construct_tree(self, X, y, attr, cur_depth):
         max_gain_attr = ""
         max_gain = 0
-        print(attr)
+
+
+        if(entropy(y)==0):
+            output = y.value_counts().idxmax()
+
+
+            n1 = Node(atrribute=attr, isLeaf=True, children={}, output=output)
+            return n1
         if (self.max_depth == cur_depth):
             output = y.value_counts().idxmax()
             n1 = Node(atrribute=attr, isLeaf=True, children={}, output=output)
+            print(X)
             return n1
         if (len(attr) == 0):
             output = y.value_counts().idxmax()
             n1 = Node(atrribute=None, isLeaf=True, output=output, children={})
+            print(X)
             return n1
 
         for a in attr:
@@ -123,7 +136,7 @@ class DecisionTree:
                 max_gain = g
                 max_gain_attr = a
 
-        # print()
+        print()
         # print('max_gain', max_gain)
         children_name = X[max_gain_attr].unique()
 
@@ -131,12 +144,16 @@ class DecisionTree:
         children = {}
         for c in children_name:
             index = X.groupby([max_gain_attr]).groups[c].tolist()
+            # print(index)
             df_y = pd.DataFrame({'Y': y.values})
-            y_mod = df_y.iloc[index]
-            # print('index',index)
+            # y_mod = df_y.iloc[index]
+
+
+
+
             temp = attr.copy()
             temp.remove(max_gain_attr)
-            children[c] = self.construct_tree(X.groupby([max_gain_attr]).get_group(c), pd.Series(df_y['Y']), temp, cur_depth + 1)
+            children[c] = self.construct_tree(X.groupby([max_gain_attr]).get_group(c), y, temp, cur_depth + 1)
 
         n1 = Node(atrribute=max_gain_attr, isLeaf=False, children=children, output=None)
         return n1
@@ -211,7 +228,7 @@ def test_decision_tree():
 
     tree1 = DecisionTree(max_depth=10)
     tree1.fit(x,pd.Series(y['PlayTennis']))
-    print(tree1.root)
+    print(tree1.root.children["Overcast"])
 
 def test_decision_tree_real_discrete():
     x1 = np.random.uniform(0, 10, 100)

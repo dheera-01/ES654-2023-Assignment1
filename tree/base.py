@@ -178,10 +178,13 @@ class DecisionTree:
         """
         pass
 
-    def print_tree(self, node):
-        if (node.isLeaf):
-            print(node.output)
+    def print_tree_real_discrete(self, node, indentation_value, prefix):
+        if (node.isLeaf == True):
+            print('    '*indentation_value,prefix,'Value: ',node.output)
             return
+        print('    '*indentation_value,prefix,'?','(',node.atrribute,' ','<=',' ',node.split_value,')')
+        self.print_tree_real_discrete(node.children['less_than_split_value'], indentation_value+1,'Y: ')
+        self.print_tree_real_discrete(node.children['greater_than_split_value'], indentation_value+1,'N: ')
 
     def plot(self) -> None:
         """
@@ -228,19 +231,22 @@ def test_decision_tree_real_discrete():
     # print(x)
     # print(y)
 
-    tree2 = DecisionTree(max_depth=2)
+    tree2 = DecisionTree(max_depth=10)
     # print(tree2.get_split_attr_value(x, y, ['x1','x2']))
-    print(tree2.construct_tree_real_discrete(x, pd.Series(y['y']), ['x1','x2'],0))
+    tree2.root = tree2.construct_tree_real_discrete(x, pd.Series(y['y']), ['x1','x2'],0)
+    tree2.print_tree_real_discrete(tree2.root, 0, '')
 
 def test_get_split_tree_real_discrete():
     x1 = np.array([1,2,3])
     y = np.array(['red', 'red', 'blue'])
     x = pd.DataFrame({'x1': x1})
     y = pd.DataFrame({'y': y})
-    print(x)
-    print(y)
 
-    print(entropy(pd.Series(y['y'])))
     tree2 = DecisionTree(max_depth=2)
-    print(tree2.construct_tree_real_discrete(x, pd.Series(y['y']), ['x1'], cur_depth=10))
+    # print(tree2.construct_tree_real_discrete(x, pd.Series(y['y']), ['x1'], cur_depth=10))
+    tree2.root = tree2.construct_tree_real_discrete(x, pd.Series(y['y']), ['x1'], cur_depth=10)
+    tree2.print_tree_real_discrete(tree2.root, 0, '')
     # print(tree2.construct_tree_real_discrete(x, pd.Series(y['y']), ['x1','x2'],0))
+
+test_decision_tree_real_discrete()
+# test_get_split_tree_real_discrete()

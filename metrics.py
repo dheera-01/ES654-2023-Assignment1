@@ -1,6 +1,6 @@
 from typing import Union
 import pandas as pd
-
+import numpy as np
 
 def accuracy(y_hat: pd.Series, y: pd.Series) -> float:
     """
@@ -14,21 +14,44 @@ def accuracy(y_hat: pd.Series, y: pd.Series) -> float:
     """
     assert y_hat.size == y.size
     # TODO: Write here
-    pass
+    ct=0
+    total=len(y_hat)
+    for i in range(len(y_hat)):
+        if(y_hat[i]==y[i]):
+            ct=ct+1
+    return float(ct)/total
 
 
 def precision(y_hat: pd.Series, y: pd.Series, cls: Union[int, str]) -> float:
     """
     Function to calculate the precision
     """
-    pass
+    assert y_hat.size == y.size
+    total=0
+    ct=0
+    for i in range(len(y_hat)):
+        if(y_hat[i]==cls and y[i]==cls):
+            ct=ct+1
+        if(y_hat[i]==cls):
+            total=total+1
+    return float(ct)/total
+
 
 
 def recall(y_hat: pd.Series, y: pd.Series, cls: Union[int, str]) -> float:
     """
     Function to calculate the recall
     """
-    pass
+
+    assert y_hat.size==y.size
+    total=0
+    ct=0
+    for i in range(len(y_hat)):
+        if(y_hat[i]==cls and y[i]==cls):
+            ct=ct+1
+        if(y[i]==cls):
+            total=total+1
+    return float(ct)/total
 
 
 def rmse(y_hat: pd.Series, y: pd.Series) -> float:

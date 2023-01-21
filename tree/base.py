@@ -40,6 +40,14 @@ class DecisionTree:
         else:
             return self.traverse_discrete_input(node.children[data[node.atrribute]], data)
 
+    def traverse_real_input(self, node: Node, data: dict):
+        if (node.isLeaf == True):
+            return node.output
+        else:
+            if (data[node.atrribute] <= node.split_value):
+                return self.traverse_real_input(node.children['less_than_split_value'], data)
+            else:
+                return self.traverse_real_input(node.children['greater_than_split_value'], data)
 
     def get_attributes_X(self, X: pd.DataFrame) -> list:
         return X.columns.tolist()
@@ -315,17 +323,21 @@ class DecisionTree:
         self.root=self.construct_tree(X,y,attributes,0)
 
 
-    def predict_discrete_input(self, X: pd.DataFrame) -> pd.Series:
-        y_pred = pd.Series()
-        for i in range(len(X)):
-            y_pred._set_value(i, self.traverse_discrete_input(self.root, X.iloc[i]))
-        return y_pred
+    # def predict_discrete_input(self, X: pd.DataFrame) -> pd.Series:
+    #     y_pred = pd.Series()
+    #     for i in range(len(X)):
+    #         y_pred._set_value(i, self.traverse_discrete_input(self.root, X.iloc[i]))
+    #     return y_pred
 
     def predict(self, X: pd.DataFrame) -> pd.Series:
         """
         Funtion to run the decision tree on test inputs
         """
-        pass
+        y_pred = pd.Series()
+        for i in range(len(X)):
+            #for real only now
+            y_pred._set_value(i, self.traverse_real_input(self.root, X.iloc[i]))
+        return y_pred
 
     def print_tree_discrete_input(self, node, indentation_value, prefix):
         if node.isLeaf == True:
@@ -417,7 +429,7 @@ def test_decision_tree_discrete_real():
     print()
     print(tree1.root)
     tree1.print_tree_discrete_input(tree1.root, 0, '')
-test_decision_tree_discrete_real()
+# test_decision_tree_discrete_real()
 
 def test_decision_tree_real_discrete():
     x1 = np.random.uniform(0, 10, 100)
@@ -425,8 +437,8 @@ def test_decision_tree_real_discrete():
     y = np.random.choice(['red', 'blue', 'green'], 100)
     x = pd.DataFrame({'x1': x1, 'x2': x2})
     y = pd.DataFrame({'y': y})
-    # print(x)
-    # print(y)
+    print(x)
+    print(y)
 
     tree2 = DecisionTree(max_depth=10)
     # print(tree2.get_split_attr_value(x, y, ['x1','x2']))
@@ -445,12 +457,14 @@ def test_decision_tree_real_real():
     # tree3 = DecisionTree(max_depth=10)
     # print(tree3.get_split_attr_value(x, y, ['x1','x2'],'real_real'))
 
-    tree_real_real = DecisionTree(max_depth=2)
+    tree_real_real = DecisionTree(max_depth=10)
     # # print(tree2.get_split_attr_value(x, y, ['x1','x2']))
     tree_real_real.root = tree_real_real.construct_tree_real_discrete(x, pd.Series(y['y']), ['x1','x2'],0,'real_real')
     print(tree_real_real.root)
     tree_real_real.print_tree_real_input(tree_real_real.root, 0, '')
-# test_decision_tree_real_real()
+    print(tree_real_real.predict(x))
+
+test_decision_tree_real_real()
 
 
 

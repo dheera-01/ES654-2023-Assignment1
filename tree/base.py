@@ -11,7 +11,7 @@ from typing import Literal
 
 import numpy as np
 import pandas as pd
-from tree.utils import entropy, information_gain, gini_index, variance_reduction
+from tree.utils import entropy, information_gain, gini_index, variance_reduction, information_gain_gini
 
 import matplotlib.pyplot as plt
 
@@ -143,7 +143,8 @@ class DecisionTree:
             return n1
 
         for a in attr:
-            g = information_gain(y, pd.Series(X[a]))
+            g = information_gain_gini(y, pd.Series(X[a]))
+            print(g)
             if (max_gain < g):
                 max_gain = g
                 max_gain_attr = a

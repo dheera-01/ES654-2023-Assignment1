@@ -33,6 +33,7 @@ class DecisionTree:
     # criterion: Literal["information_gain", "gini_index"]  # criterion won't be used for regression
     max_depth: int  # The maximum depth the tree can grow to
     root = Node('hello', True, {}, 'hello',split_value=0.0)
+    tree_type = 'discrete_discrete'
 
     def traverse_discrete_input(self, node: Node, data: dict):
         if (node.isLeaf == True):
@@ -49,18 +50,15 @@ class DecisionTree:
             else:
                 return self.traverse_real_input(node.children['greater_than_split_value'], data)
 
-    def get_attributes_X(self, X: pd.DataFrame) -> list:
-        return X.columns.tolist()
-
-    def get_split_attr_value(self, X: pd.DataFrame, y: pd.DataFrame, attr: list, case: str) -> dict:
+    def get_split_attr_value(self, X: pd.DataFrame, y: pd.DataFrame, attr: list) -> dict:
         rtr = {'max_gain_attr' : "",
                'max_gain' : float('-inf'),
                'split_value' : 0,
                'split_index': 0}
 
-        if case == 'real_discrete':
+        if self.tree_type == 'real_discrete':
             rtr['max_gain'] = float('-inf')
-        elif case == 'real_real':
+        elif self.tree_type == 'real_real':
             rtr['max_gain'] = float('inf')
 
         combined_df = pd.concat([X, y], axis=1)
@@ -69,7 +67,7 @@ class DecisionTree:
             combined_df = combined_df.sort_values(by=[a])
             x_a_series_sorted = pd.Series(combined_df[a])
 
-            if case == 'real_discrete':
+            if self.tree_type == 'real_discrete':
                 # entropy of x_a_series_sorted
                 entropy_x_a_series_sorted = entropy(x_a_series_sorted)
 
@@ -81,7 +79,7 @@ class DecisionTree:
 
                 bottom = combined_df.iloc[i + 1:]
 
-                if case == 'real_discrete':
+                if self.tree_type == 'real_discrete':
                     #entropy of top
                     entropy_top = entropy(pd.Series(top['y']))
                     #entropy of bottom
@@ -92,9 +90,7 @@ class DecisionTree:
                         rtr['max_gain'] = info_gain
                         rtr['split_value'] = split_value_i
                         rtr['split_index'] = i
-                elif case == 'real_real':
-                    #here calculate the loss using mse in metrics.py
-                    #print('calculate loss')
+                elif self.tree_type == 'real_real':
                     y_hat_top = pd.Series([top['y'].mean()] * len(top))
                     y_hat_bottom = pd.Series([bottom['y'].mean()] * len(bottom))
                     y_hat = pd.concat([y_hat_top, y_hat_bottom], axis=0)
@@ -106,11 +102,10 @@ class DecisionTree:
                         rtr['max_gain'] = loss
                         rtr['split_value'] = split_value_i
                         rtr['split_index'] = i
-        # print(rtr)
         return rtr
 
-    def construct_tree_real_discrete(self, X, y, attr, cur_depth, case: str) -> Node:
-        if case == 'real_discrete':
+    def construct_tree_real_input(self, X, y, attr, cur_depth) -> Node:
+        if self.tree_type == 'real_discrete':
             if (entropy(y) == 0.0):
                 output = y.value_counts().idxmax()
                 n1 = Node(atrribute=attr, isLeaf=True, children={}, output=output, split_value=0.0)
@@ -125,7 +120,7 @@ class DecisionTree:
                 output = y.value_counts().idxmax()
                 n1 = Node(atrribute=None, isLeaf=True, output=output, children={}, split_value=0.0)
                 return n1
-        elif case == 'real_real':
+        elif self.tree_type == 'real_real':
             if y.nunique() == 1:
                 output = y.mean(axis=0)
                 n1 = Node(atrribute=attr, isLeaf=True, children={}, output=output, split_value=0.0)
@@ -142,19 +137,24 @@ class DecisionTree:
                 return n1
 
         df_y = pd.DataFrame({'y': y.values})
-        max_gain_dict = self.get_split_attr_value(X, df_y, attr,case)
+        max_gain_dict = self.get_split_attr_value(X, df_y, attr)
 
-        combined_df = pd.concat([X, y], axis=1)
+        combined_df = pd.concat([X, df_y], axis=1)
         combined_df = combined_df.sort_values(by=[max_gain_dict['max_gain_attr']])
         combined_df = combined_df.reset_index(drop=True)
+
         top = combined_df.iloc[:max_gain_dict['split_index'] + 1]
         top_reset_index = top.reset_index(drop=True)
+        top_reset_index_y = top_reset_index['y']
+        top_reset_index = top_reset_index.drop(['y'], axis=1)
 
         bottom = combined_df.iloc[max_gain_dict['split_index'] + 1:]
         bottom_reset_index = bottom.reset_index(drop=True)
+        bottom_reset_index_y = bottom_reset_index['y']
+        bottom_reset_index = bottom_reset_index.drop(['y'], axis=1)
 
-        node_less_than_split_value = self.construct_tree_real_discrete(top_reset_index.drop(columns=['y']), top_reset_index['y'], attr, cur_depth + 1,case)
-        node_greater_than_split_value = self.construct_tree_real_discrete(bottom_reset_index.drop(columns=['y']), bottom_reset_index['y'], attr, cur_depth + 1,case)
+        node_less_than_split_value = self.construct_tree_real_input(top_reset_index, top_reset_index_y, attr, cur_depth + 1)
+        node_greater_than_split_value = self.construct_tree_real_input(bottom_reset_index, bottom_reset_index_y, attr, cur_depth + 1)
 
         children = {}
         children['less_than_split_value'] = node_less_than_split_value
@@ -163,171 +163,96 @@ class DecisionTree:
         n1 = Node(atrribute=max_gain_dict['max_gain_attr'], isLeaf=False, children=children, output=None, split_value=max_gain_dict['split_value'])
         return n1
 
-    def construct_tree_real_real_cover(self, X, y, attr, cur_depth):
-        print('hello')
+    def construct_tree_discrete_input(self, X, y, attr, cur_depth):
+        max_var_gain_attr = ""
+        max_var_gain = float('-inf')
 
-    def construct_tree(self, X, y, attr, cur_depth):
-        print()
-        print(attr)
-        max_gain_attr = ""
-        max_gain = float('-inf')
+        if self.tree_type == 'discrete_discrete':
+            if (entropy(y) == 0.0):
+                output = y.value_counts().idxmax()
+                n1 = Node(atrribute=attr, isLeaf=True, children={}, output=output, split_value=0.0)
+                return n1
 
-        if(entropy(y)==0.0):
-            output = y.value_counts().idxmax()
-            n1 = Node(atrribute=attr, isLeaf=True, children={}, output=output, split_value=0.0)
-            return n1
+            if (self.max_depth == cur_depth):
+                output = y.value_counts().idxmax()
+                n1 = Node(atrribute=attr, isLeaf=True, children={}, output=output, split_value=0.0)
+                print(X)
+                return n1
 
-        if (self.max_depth == cur_depth):
-            output = y.value_counts().idxmax()
-            n1 = Node(atrribute=attr, isLeaf=True, children={}, output=output, split_value=0.0)
-            print(X)
-            return n1
+            if (len(attr) == 0):
+                output = y.value_counts().idxmax()
+                n1 = Node(atrribute=None, isLeaf=True, output=output, children={}, split_value=0.0)
+                print(X)
+                return n1
+        elif self.tree_type == 'discrete_real':
+            if (len(y) < 2 or y.std() == 0.0):
+                output = y.mean()
+                n1 = Node(atrribute=attr, isLeaf=True, children={}, output=output, split_value=0.0)
+                return n1
 
-        if (len(attr) == 0):
-            output = y.value_counts().idxmax()
-            n1 = Node(atrribute=None, isLeaf=True, output=output, children={}, split_value=0.0)
-            print(X)
-            return n1
+            if (self.max_depth == cur_depth):
+                output = y.mean()
+                n1 = Node(atrribute=attr, isLeaf=True, children={}, output=output, split_value=0.0)
+                return n1
+
+            if (len(attr) == 0):
+                output = y.mean()
+                n1 = Node(atrribute=None, isLeaf=True, output=output, children={}, split_value=0.0)
+                return n1
 
         for a in attr:
-            g = information_gain_gini(y, pd.Series(X[a]))
-            print(g)
-            if (max_gain < g):
-                max_gain = g
-                max_gain_attr = a
+            if self.tree_type == 'discrete_discrete':
+                var = information_gain_gini(y, pd.Series(X[a]))
+            elif self.tree_type == 'discrete_real':
+                var = variance_reduction(y, pd.Series(X[a]))
 
-        children_name = X[max_gain_attr].unique()
+            if (max_var_gain < var):
+                max_var_gain = var
+                max_var_gain_attr = a
+
+        children_name = X[max_var_gain_attr].unique()
         children = {}
 
         for c in children_name:
-            index = X.groupby([max_gain_attr]).groups[c].tolist()
+            index = X.groupby([max_var_gain_attr]).groups[c].tolist()
 
-            df_y = pd.DataFrame({'Y':y.values})
+            df_y = pd.DataFrame({'y': y.values})
             y_mod = df_y.iloc[index]
             y_mod = y_mod.reset_index(drop=True)
-            y_mod = pd.Series(y_mod['Y'])
+            y_mod = pd.Series(y_mod['y'])
 
-            x_mod = X.groupby([max_gain_attr]).get_group(c).reset_index(drop=True)
-
-            temp = attr.copy()
-            temp.remove(max_gain_attr)
-            children[c] = self.construct_tree(x_mod, y_mod, temp, cur_depth + 1)
-
-        n1 = Node(atrribute=max_gain_attr, isLeaf=False, children=children, output=None, split_value=0.0)
-        return n1
-
-    def construct_tree_discrete_real(self, X, y, attr, cur_depth):
-
-        max_var_red_attr = ""
-        max_var_red = float('-inf')
-
-        if (len(y)<2 or y.std() == 0.0):
-            output = y.mean()
-            n1 = Node(atrribute=attr, isLeaf=True, children={}, output=output, split_value=0.0)
-            return n1
-
-        if (self.max_depth == cur_depth):
-            output = y.mean()
-            n1 = Node(atrribute=attr, isLeaf=True, children={}, output=output, split_value=0.0)
-            return n1
-
-        if (len(attr) == 0):
-            output = y.mean()
-            n1 = Node(atrribute=None, isLeaf=True, output=output, children={}, split_value=0.0)
-            return n1
-
-        for a in attr:
-            var = variance_reduction(y, pd.Series(X[a]))
-
-            if (max_var_red < var):
-                max_var_red = var
-                max_var_red_attr = a
-
-        children_name = X[max_var_red_attr].unique()
-
-        children = {}
-
-        for c in children_name:
-            index = X.groupby([max_var_red_attr]).groups[c].tolist()
-
-            df_y = pd.DataFrame({'Y': y.values})
-            y_mod = df_y.iloc[index]
-            y_mod = y_mod.reset_index(drop=True)
-            y_mod = pd.Series(y_mod['Y'])
-
-            x_mod = X.groupby([max_var_red_attr]).get_group(c).reset_index(drop=True)
+            x_mod = X.groupby([max_var_gain_attr]).get_group(c).reset_index(drop=True)
 
             temp = attr.copy()
-            temp.remove(max_var_red_attr)
-            children[c] = self.construct_tree_discrete_real(x_mod, y_mod, temp, cur_depth + 1)
+            temp.remove(max_var_gain_attr)
+            children[c] = self.construct_tree_discrete_input(x_mod, y_mod, temp, cur_depth + 1)
 
-        n1 = Node(atrribute=max_var_red_attr, isLeaf=False, children=children, output=None, split_value=0.0)
-        return n1
-
-    def construct_tree_discrete_real(self, X, y, attr, cur_depth):
-
-        max_var_red_attr = ""
-        max_var_red = float('-inf')
-
-        if (len(y)<2 or y.std() == 0.0):
-            output = y.mean()
-            n1 = Node(atrribute=attr, isLeaf=True, children={}, output=output, split_value=0.0)
-            return n1
-
-        if (self.max_depth == cur_depth):
-            output = y.mean()
-            n1 = Node(atrribute=attr, isLeaf=True, children={}, output=output, split_value=0.0)
-            return n1
-
-        if (len(attr) == 0):
-            output = y.mean()
-            n1 = Node(atrribute=None, isLeaf=True, output=output, children={}, split_value=0.0)
-            return n1
-
-        for a in attr:
-            var = variance_reduction(y, pd.Series(X[a]))
-
-            if (max_var_red < var):
-                max_var_red = var
-                max_var_red_attr = a
-
-        children_name = X[max_var_red_attr].unique()
-
-        children = {}
-
-        for c in children_name:
-            index = X.groupby([max_var_red_attr]).groups[c].tolist()
-
-            df_y = pd.DataFrame({'Y': y.values})
-            y_mod = df_y.iloc[index]
-            y_mod = y_mod.reset_index(drop=True)
-            y_mod = pd.Series(y_mod['Y'])
-
-            x_mod = X.groupby([max_var_red_attr]).get_group(c).reset_index(drop=True)
-
-            temp = attr.copy()
-            temp.remove(max_var_red_attr)
-            children[c] = self.construct_tree_discrete_real(x_mod, y_mod, temp, cur_depth + 1)
-
-        n1 = Node(atrribute=max_var_red_attr, isLeaf=False, children=children, output=None, split_value=0.0)
+        n1 = Node(atrribute=max_var_gain_attr, isLeaf=False, children=children, output=None, split_value=0.0)
         return n1
 
     def fit(self, X: pd.DataFrame, y: pd.Series) -> None:
         """
         Function to train and construct the decision tree
         """
-        
-        # attributes=["outlook","humidity","rain"]
-        attributes = self.get_attributes_X(X)
-        # self.root = self.construct_tree(X,y,attributes,-1);
-        self.root=self.construct_tree(X,y,attributes,0)
+        # setting the type of tree in the class
+        if (X.iloc[:,0].dtype == 'int64' or X.iloc[:,0].dtype == 'float64') and (y.dtype == 'int64' or y.dtype == 'float64') :
+            self.tree_type = 'real_real'
+        elif (X.iloc[:,0].dtype == 'int64' or X.iloc[:,0].dtype == 'float64') and (y.dtype != 'int64' and y.dtype != 'float64'):
+            self.tree_type = 'real_discrete'
+        elif (X.iloc[:,0].dtype != 'int64' and X.iloc[:,0].dtype != 'float64') and (y.dtype == 'int64' or y.dtype == 'float64'):
+            self.tree_type = 'discrete_real'
+        else:
+            self.tree_type = 'discrete_discrete'
 
-
-    # def predict_discrete_input(self, X: pd.DataFrame) -> pd.Series:
-    #     y_pred = pd.Series()
-    #     for i in range(len(X)):
-    #         y_pred._set_value(i, self.traverse_discrete_input(self.root, X.iloc[i]))
-    #     return y_pred
+        # calling the construct tree functions according to the type of tree
+        if self.tree_type == 'real_real':
+            self.root = self.construct_tree_real_input(X, y, X.columns.tolist(), 0)
+        elif self.tree_type == 'real_discrete':
+            self.root = self.construct_tree_real_input(X, y, X.columns.tolist(), 0)
+        elif self.tree_type == 'discrete_real':
+            self.root = self.construct_tree_discrete_input(X, y, X.columns.tolist(), 0)
+        else:
+            self.root = self.construct_tree_discrete_input(X, y, X.columns.tolist(), 0)
 
     def predict(self, X: pd.DataFrame) -> pd.Series:
         """
@@ -335,8 +260,10 @@ class DecisionTree:
         """
         y_pred = pd.Series()
         for i in range(len(X)):
-            #for real only now
-            y_pred._set_value(i, self.traverse_real_input(self.root, X.iloc[i]))
+            if self.tree_type == 'real_real' or self.tree_type == 'real_discrete':
+                y_pred._set_value(i, self.traverse_real_input(self.root, X.iloc[i]))
+            else:
+                y_pred._set_value(i, self.traverse_discrete_input(self.root, X.iloc[i]))
         return y_pred
 
     def print_tree_discrete_input(self, node, indentation_value, prefix):
@@ -356,7 +283,6 @@ class DecisionTree:
         self.print_tree_real_input(node.children['less_than_split_value'], indentation_value+1,'Y: ')
         self.print_tree_real_input(node.children['greater_than_split_value'], indentation_value+1,'N: ')
 
-
     def plot(self) -> None:
         """
         Function to plot the tree
@@ -369,6 +295,15 @@ class DecisionTree:
             N: Class C
         Where Y => Yes and N => No
         """
+        if self.tree_type == 'real_real' or self.tree_type == 'real_discrete':
+            self.print_tree_real_input(self.root, 0, '')
+        else:
+            self.print_tree_discrete_input(self.root, 0, '')
+
+
+
+
+
 
 def test_decision_tree():
     """
@@ -391,13 +326,15 @@ def test_decision_tree():
 
     tree1 = DecisionTree(max_depth=10)
     tree1.fit(x, pd.Series(y['PlayTennis']))
+    tree1.plot()
+
     X_pred = pd.DataFrame({"Outlook": ['Sunny', 'Rain'], "Temperature": ['Hot', 'Mild'], "Humidity": ['High', 'Normal'],
                            "Wind": ['Strong', 'Weak']})
-    y_pred = tree1.predict_discrete_input(X_pred)
-
+    y_pred = tree1.predict(X_pred)
     print(y_pred)
-    tree1.print_tree_discrete_discrete(tree1.root,0,'')
 
+
+# test_decision_tree()
 
 def test_decision_tree_real_discrete():
     x1 = np.random.uniform(0, 10, 100)
@@ -406,9 +343,9 @@ def test_decision_tree_real_discrete():
     x = pd.DataFrame({'x1': x1, 'x2': x2})
     y = pd.DataFrame({'y': y})
 
-#
-#     tree2 = DecisionTree(max_depth=2)
-#     print(tree2.get_split_attr_value(x,y,['x1','x2']))
+    tree1 = DecisionTree(max_depth=10)
+    tree1.fit(x, pd.Series(y['y']))
+    tree1.plot()
 
 # test_decision_tree_real_discrete()
 
@@ -428,7 +365,7 @@ def test_decision_tree_discrete_real():
     print(y.mean())
     print()
     print(tree1.root)
-    tree1.print_tree_discrete_input(tree1.root, 0, '')
+    tree1.plot()
 # test_decision_tree_discrete_real()
 
 def test_decision_tree_real_discrete():
@@ -442,7 +379,7 @@ def test_decision_tree_real_discrete():
 
     tree2 = DecisionTree(max_depth=10)
     # print(tree2.get_split_attr_value(x, y, ['x1','x2']))
-    tree2.root = tree2.construct_tree_real_discrete(x, pd.Series(y['y']), ['x1','x2'],0,)
+    tree2.root = tree2.construct_tree_real_input(x, pd.Series(y['y']), ['x1','x2'],0,)
     tree2.print_tree_real_input(tree2.root, 0, '')
 
 def test_decision_tree_real_real():
@@ -454,17 +391,14 @@ def test_decision_tree_real_real():
     print(x)
     print(y)
 
-    # tree3 = DecisionTree(max_depth=10)
-    # print(tree3.get_split_attr_value(x, y, ['x1','x2'],'real_real'))
+    tree2 = DecisionTree(max_depth=10)
+    tree2.fit(x, pd.Series(y['y']))
+    tree2.plot()
 
-    tree_real_real = DecisionTree(max_depth=10)
-    # # print(tree2.get_split_attr_value(x, y, ['x1','x2']))
-    tree_real_real.root = tree_real_real.construct_tree_real_discrete(x, pd.Series(y['y']), ['x1','x2'],0,'real_real')
-    print(tree_real_real.root)
-    tree_real_real.print_tree_real_input(tree_real_real.root, 0, '')
-    print(tree_real_real.predict(x))
+    pred = tree2.predict(x)
+    print(pred)
 
-test_decision_tree_real_real()
+# test_decision_tree_real_real()
 
 
 
@@ -475,10 +409,10 @@ def test_get_split_tree_real_discrete():
     y = pd.DataFrame({'y': y})
 
     tree2 = DecisionTree(max_depth=2)
-    # print(tree2.construct_tree_real_discrete(x, pd.Series(y['y']), ['x1'], cur_depth=10))
-    tree2.root = tree2.construct_tree_real_discrete(x, pd.Series(y['y']), ['x1'], cur_depth=10)
+    # print(tree2.construct_tree_real_input(x, pd.Series(y['y']), ['x1'], cur_depth=10))
+    tree2.root = tree2.construct_tree_real_input(x, pd.Series(y['y']), ['x1'], cur_depth=10)
     tree2.print_tree_real_input(tree2.root, 0, '')
-    # print(tree2.construct_tree_real_discrete(x, pd.Series(y['y']), ['x1','x2'],0))
+    # print(tree2.construct_tree_real_input(x, pd.Series(y['y']), ['x1','x2'],0))
 
 # test_decision_tree()
 # test_decision_tree_real_discrete()

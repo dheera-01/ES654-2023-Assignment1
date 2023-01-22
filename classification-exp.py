@@ -24,9 +24,11 @@ y_train = df_y.iloc[:split_index]
 X_test = df_X.iloc[split_index:].reset_index(drop=True)
 y_test = df_y.iloc[split_index:].reset_index(drop=True)
 y_test_series = pd.Series(y_test.iloc[:, 0])
+# print(X_test,y_test)
 
-tree1 = DecisionTree(max_depth=5)
+tree1 = DecisionTree(max_depth=1)
 tree1.fit(X_train, pd.Series(y_train.iloc[:, 0]))
+# tree1.plot()
 # tree1.plot()
 result = tree1.predict(X_test)
 
@@ -72,4 +74,4 @@ def tuning(X_y: pd.DataFrame) -> float:
 #         optimal_tree.fit(X_y_train.iloc[:, :-1], pd.Series(X_y_train.iloc[:, -1]))
 #         y_hat = optimal_tree.predict(X_y_test.iloc[:,:-1])
 
-# print(tuning(pd.concat([X_train, y_train], axis=1)))
+print(tuning(pd.concat([X_train, y_train], axis=1)))

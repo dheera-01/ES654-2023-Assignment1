@@ -65,11 +65,13 @@ class DecisionTree:
 
         for a in attr:
             combined_df = combined_df.sort_values(by=[a])
+            # print('Combined_df',combined_df)
             x_a_series_sorted = pd.Series(combined_df[a])
 
             if self.tree_type == 'real_discrete':
                 # entropy of x_a_series_sorted
                 entropy_x_a_series_sorted = entropy(x_a_series_sorted)
+                # print('Entropy',entropy_x_a_series_sorted)
 
             for i in range(0, len(x_a_series_sorted) - 1):
                 split_value_i = (x_a_series_sorted.iloc[i] + x_a_series_sorted.iloc[i+1])/2

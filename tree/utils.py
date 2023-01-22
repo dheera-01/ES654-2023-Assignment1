@@ -13,7 +13,7 @@ def entropy(Y: pd.Series) -> float:
     for i in Y.value_counts():
         temp = i/n
         if temp != 0:
-            rtr = rtr + temp * math.log(temp,2)
+            rtr = rtr - temp * math.log(temp,2)
     return rtr
 
 # y = pd.DataFrame({'y':[1]})

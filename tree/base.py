@@ -176,13 +176,11 @@ class DecisionTree:
             if (self.max_depth == cur_depth):
                 output = y.value_counts().idxmax()
                 n1 = Node(atrribute=attr, isLeaf=True, children={}, output=output, split_value=0.0)
-                print(X)
                 return n1
 
             if (len(attr) == 0):
                 output = y.value_counts().idxmax()
                 n1 = Node(atrribute=None, isLeaf=True, output=output, children={}, split_value=0.0)
-                print(X)
                 return n1
         elif self.tree_type == 'discrete_real':
             if (len(y) < 2 or y.std() == 0.0):
@@ -234,25 +232,37 @@ class DecisionTree:
         """
         Function to train and construct the decision tree
         """
-        # setting the type of tree in the class
-        if (X.iloc[:,0].dtype == 'int64' or X.iloc[:,0].dtype == 'float64') and (y.dtype == 'int64' or y.dtype == 'float64') :
-            self.tree_type = 'real_real'
-        elif (X.iloc[:,0].dtype == 'int64' or X.iloc[:,0].dtype == 'float64') and (y.dtype != 'int64' and y.dtype != 'float64'):
-            self.tree_type = 'real_discrete'
-        elif (X.iloc[:,0].dtype != 'int64' and X.iloc[:,0].dtype != 'float64') and (y.dtype == 'int64' or y.dtype == 'float64'):
-            self.tree_type = 'discrete_real'
-        else:
+        # # setting the type of tree in the class
+        # if (X.iloc[:,0].dtype == 'int64' or X.iloc[:,0].dtype == 'float64') and (y.dtype == 'int64' or y.dtype == 'float64') :
+        #     self.tree_type = 'real_real'
+        # elif (X.iloc[:,0].dtype == 'int64' or X.iloc[:,0].dtype == 'float64') and (y.dtype != 'int64' and y.dtype != 'float64'):
+        #     self.tree_type = 'real_discrete'
+        # elif (X.iloc[:,0].dtype != 'int64' and X.iloc[:,0].dtype != 'float64') and (y.dtype == 'int64' or y.dtype == 'float64'):
+        #     self.tree_type = 'discrete_real'
+        # else:
+        #     self.tree_type = 'discrete_discrete'
+
+        if X.iloc[:,0].dtype == 'category' and y.dtype == 'category':
             self.tree_type = 'discrete_discrete'
+        elif X.iloc[:,0].dtype == 'category' and y.dtype != 'category':
+            self.tree_type = 'discrete_real'
+        elif X.iloc[:,0].dtype != 'category' and y.dtype == 'category':
+            self.tree_type = 'real_discrete'
+        else:
+            self.tree_type = 'real_real'
 
         # calling the construct tree functions according to the type of tree
+        x_columns_lst = X.columns.tolist()
+        # x_columns_lst = [str(col) for col in x_columns_lst]
+        # X.columns = x_columns_lst
         if self.tree_type == 'real_real':
-            self.root = self.construct_tree_real_input(X, y, X.columns.tolist(), 0)
+            self.root = self.construct_tree_real_input(X, y, x_columns_lst, 0)
         elif self.tree_type == 'real_discrete':
-            self.root = self.construct_tree_real_input(X, y, X.columns.tolist(), 0)
+            self.root = self.construct_tree_real_input(X, y, x_columns_lst, 0)
         elif self.tree_type == 'discrete_real':
-            self.root = self.construct_tree_discrete_input(X, y, X.columns.tolist(), 0)
+            self.root = self.construct_tree_discrete_input(X, y, x_columns_lst, 0)
         else:
-            self.root = self.construct_tree_discrete_input(X, y, X.columns.tolist(), 0)
+            self.root = self.construct_tree_discrete_input(X, y, x_columns_lst, 0)
 
     def predict(self, X: pd.DataFrame) -> pd.Series:
         """

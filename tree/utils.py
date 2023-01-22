@@ -7,10 +7,17 @@ def entropy(Y: pd.Series) -> float:
     Function to calculate the entropy
     """
     n = len(Y)
+    if n == 1:
+        return 0.0
     rtr = 0.0
     for i in Y.value_counts():
-        rtr = rtr - i/n * math.log2(i/n)
+        temp = i/n
+        if temp != 0:
+            rtr = rtr + temp * math.log(temp,2)
     return rtr
+
+# y = pd.DataFrame({'y':[1]})
+# print('entropy',pd.Series(y['y'] ,dtype='category'))
 
 def gini_index(Y: pd.Series) -> float:
     """

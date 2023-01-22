@@ -7,7 +7,7 @@ def entropy(Y: pd.Series) -> float:
     Function to calculate the entropy
     """
     n = len(Y)
-    if n == 1:
+    if n <= 1:
         return 0.0
     rtr = 0.0
     for i in Y.value_counts():
@@ -24,6 +24,8 @@ def gini_index(Y: pd.Series) -> float:
     Function to calculate the gini index
     """
     n = len(Y)
+    if(n<=1):
+        return 0.0
     rtr = 0.0
     for i in Y.value_counts():
         rtr = rtr + (i/n)*(1-i/n)

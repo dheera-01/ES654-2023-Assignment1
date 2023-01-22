@@ -30,11 +30,20 @@ class Node:
 
 @dataclass
 class DecisionTree:
-    # criterion: Literal["information_gain", "gini_index"]  # criterion won't be used for regression
+    criterion: Literal["information_gain", "gini_index"]  # criterion won't be used for regression
     max_depth: int  # The maximum depth the tree can grow to
     root = Node('hello', True, {}, 'hello',split_value=0.0)
     tree_type = 'discrete_discrete'
 
+
+    criteria_functions={
+        "information_gain":information_gain,
+        "gini_index":information_gain_gini
+    }
+    entropy_gini_dict={
+        "information_gain":entropy,
+        "gini_index":gini_index
+    }
     def traverse_discrete_input(self, node: Node, data: dict):
         if (node.isLeaf == True):
             return node.output
@@ -70,8 +79,7 @@ class DecisionTree:
 
             if self.tree_type == 'real_discrete':
                 # entropy of x_a_series_sorted
-                entropy_x_a_series_sorted = entropy(x_a_series_sorted)
-                # print('Entropy',entropy_x_a_series_sorted)
+                entropy_x_a_series_sorted = self.entropy_gini_dict[self.criterion](x_a_series_sorted)
 
             for i in range(0, len(x_a_series_sorted) - 1):
                 split_value_i = (x_a_series_sorted.iloc[i] + x_a_series_sorted.iloc[i+1])/2
@@ -83,9 +91,9 @@ class DecisionTree:
 
                 if self.tree_type == 'real_discrete':
                     #entropy of top
-                    entropy_top = entropy(pd.Series(top['y']))
+                    entropy_top = self.entropy_gini_dict[self.criterion](pd.Series(top['y']))
                     #entropy of bottom
-                    entropy_bottom = entropy(pd.Series(bottom['y']))
+                    entropy_bottom = self.entropy_gini_dict[self.criterion](pd.Series(bottom['y']))
                     info_gain = entropy_x_a_series_sorted - (len(top)/len(x_a_series_sorted))*entropy_top - (len(bottom)/len(x_a_series_sorted))*entropy_bottom
                     if (rtr['max_gain'] < info_gain):
                         rtr['max_gain_attr'] = a
@@ -108,7 +116,7 @@ class DecisionTree:
 
     def construct_tree_real_input(self, X, y, attr, cur_depth) -> Node:
         if self.tree_type == 'real_discrete':
-            if (entropy(y) == 0.0):
+            if (self.entropy_gini_dict[self.criterion](y) == 0.0):
                 output = y.value_counts().idxmax()
                 n1 = Node(atrribute=attr, isLeaf=True, children={}, output=output, split_value=0.0)
                 return n1
@@ -170,7 +178,7 @@ class DecisionTree:
         max_var_gain = float('-inf')
 
         if self.tree_type == 'discrete_discrete':
-            if (entropy(y) == 0.0):
+            if (self.entropy_gini_dict[self.criterion](y) == 0.0):
                 output = y.value_counts().idxmax()
                 n1 = Node(atrribute=attr, isLeaf=True, children={}, output=output, split_value=0.0)
                 return n1
@@ -202,7 +210,7 @@ class DecisionTree:
 
         for a in attr:
             if self.tree_type == 'discrete_discrete':
-                var = information_gain_gini(y, pd.Series(X[a]))
+                var = self.criteria_functions[self.criterion](y, pd.Series(X[a]))
             elif self.tree_type == 'discrete_real':
                 var = variance_reduction(y, pd.Series(X[a]))
 
@@ -324,29 +332,18 @@ def test_decision_tree():
     """
     Function to test the decision tree
     """
-    x = pd.DataFrame({
-        'Outlook': ['Sunny', 'Sunny', 'Overcast', 'Rain', 'Rain', 'Rain', 'Overcast', 'Sunny', 'Sunny', 'Rain', 'Sunny',
-                    'Overcast', 'Overcast', 'Rain'],
-        'Temperature': ['Hot', 'Hot', 'Hot', 'Mild', 'Cool', 'Cool', 'Cool', 'Mild', 'Cool', 'Mild', 'Mild', 'Mild',
-                        'Hot', 'Mild'],
-        'Humidity': ['High', 'High', 'High', 'High', 'Normal', 'Normal', 'Normal', 'High', 'Normal', 'Normal', 'Normal',
-                     'High', 'Normal', 'High'],
-        'Wind': ['Weak', 'Strong', 'Weak', 'Weak', 'Weak', 'Strong', 'Strong', 'Weak', 'Weak', 'Weak', 'Strong',
-                 'Strong', 'Weak', 'Strong'],
-        })
+    N = 30
+    P = 5
+    X = pd.DataFrame({i: pd.Series(np.random.randint(P, size=N), dtype="category") for i in range(5)})
+    y = pd.Series(np.random.randint(P, size=N), dtype="category")
 
-    y = pd.DataFrame({
-        'PlayTennis': ['No', 'No', 'Yes', 'Yes', 'Yes', 'No', 'Yes', 'No', 'Yes', 'Yes', 'Yes', 'Yes', 'Yes', 'No']
-    })
 
-    tree1 = DecisionTree(max_depth=10)
-    tree1.fit(x, pd.Series(y['PlayTennis']))
-    tree1.plot()
+    for criteria in ['information_gain', 'gini_index']:
+        tree = DecisionTree(criterion=criteria,max_depth=10)  # Split based on Inf. Gain
+        tree.fit(X, y)
+        tree.plot()
+        print("\n"*10)
 
-    X_pred = pd.DataFrame({"Outlook": ['Sunny', 'Rain'], "Temperature": ['Hot', 'Mild'], "Humidity": ['High', 'Normal'],
-                           "Wind": ['Strong', 'Weak']})
-    y_pred = tree1.predict(X_pred)
-    print(y_pred)
 
 
 # test_decision_tree()
@@ -384,18 +381,28 @@ def test_decision_tree_discrete_real():
 # test_decision_tree_discrete_real()
 
 def test_decision_tree_real_discrete():
-    x1 = np.random.uniform(0, 10, 100)
-    x2 = np.random.uniform(0, 10, 100)
-    y = np.random.choice(['red', 'blue', 'green'], 100)
-    x = pd.DataFrame({'x1': x1, 'x2': x2})
-    y = pd.DataFrame({'y': y})
-    print(x)
-    print(y)
+    # x1 = np.random.uniform(0, 10, 100)
+    # x2 = np.random.uniform(0, 10, 100)
+    # y = np.random.choice(['red', 'blue', 'green'], 100)
+    # X = pd.DataFrame({'x1': x1, 'x2': x2})
+    # y = pd.DataFrame({'y': y})
+    N = 30
+    P = 5
+    X = pd.DataFrame(np.random.randn(N, P))
+    y = pd.Series(np.random.randint(P, size=N), dtype="category")
+    for criteria in ['information_gain', 'gini_index']:
+        tree = DecisionTree(criterion=criteria, max_depth=10)  # Split based on Inf. Gain
+        tree.fit(X, y)
+        tree.plot()
+        y_pred = tree.predict(X)
 
-    tree2 = DecisionTree(max_depth=10)
+        pred_df=pd.DataFrame({'y':y,'y_pred':y_pred})
+        print(pred_df)
+        print("\n" * 10)
+
     # print(tree2.get_split_attr_value(x, y, ['x1','x2']))
-    tree2.root = tree2.construct_tree_real_input(x, pd.Series(y['y']), ['x1','x2'],0,)
-    tree2.print_tree_real_input(tree2.root, 0, '')
+    # tree2.root = tree2.construct_tree_real_input(x, pd.Series(y['y']), ['x1','x2'],0,)
+
 
 def test_decision_tree_real_real():
     x1 = np.random.uniform(0, 10, 100)
@@ -430,5 +437,5 @@ def test_get_split_tree_real_discrete():
     # print(tree2.construct_tree_real_input(x, pd.Series(y['y']), ['x1','x2'],0))
 
 # test_decision_tree()
-# test_decision_tree_real_discrete()
+test_decision_tree_real_discrete()
 # test_get_split_tree_real_discrete()

@@ -34,6 +34,8 @@ def precision(y_hat: pd.Series, y: pd.Series, cls: Union[int, str]) -> float:
             ct=ct+1
         if(y_hat[i]==cls):
             total=total+1
+    if total == 0:
+        return 0
     return float(ct)/total
 
 
@@ -51,6 +53,8 @@ def recall(y_hat: pd.Series, y: pd.Series, cls: Union[int, str]) -> float:
             ct=ct+1
         if(y[i]==cls):
             total=total+1
+    if total == 0:
+        return 0
     return float(ct)/total
 
 

@@ -10,7 +10,7 @@ np.random.seed(42)
 num_average_time = 100
 
 
-def plot_data(df_fold_depth: pd.DataFrame):
+def plot_data(df_fold_depth: pd.DataFrame,case:str):
     n_axis = df_fold_depth['N']
     m_axis = df_fold_depth['M']
     fit_time_axis = df_fold_depth['Fit Time']
@@ -18,7 +18,7 @@ def plot_data(df_fold_depth: pd.DataFrame):
     fig = plt.figure()
 
     ax2 = fig.add_subplot(111, projection='3d')
-
+    ax2.set_title('Fit Time for '+ case)
     ax2.plot_trisurf(n_axis, m_axis, fit_time_axis, cmap="hot")
 
     ax2.set_xlabel('N')
@@ -27,14 +27,14 @@ def plot_data(df_fold_depth: pd.DataFrame):
 
     fig2 = plt.figure()
     ax = fig2.add_subplot(111, projection='3d')
-
+    ax.set_title('Predict Time for ' + case)
     ax.plot_trisurf(n_axis, m_axis, predict_time_axis, cmap="hot")
 
     ax.set_xlabel('N')
     ax.set_ylabel('M')
     ax.set_zlabel('Predict Time')
 
-    plt.show()
+
 
     print(df_fold_depth)
 
@@ -83,87 +83,7 @@ for case in case_list:
             predict_end = time.time()
             predict_time_total=predict_end-predict_begin
             df_fold_depth = df_fold_depth.append({'N': n, 'M': m,'Fit Time':total_fit_time,'Predict Time':predict_time_total},ignore_index=True)
-    plot_data(df_fold_depth)
+    plot_data(df_fold_depth,case)
 
 
-# N = 30
-# P = 5
-# X = pd.DataFrame(np.random.randn(N, P))
-# y = pd.Series(np.random.randn(N))
-#
-#
-# for criteria in ['information_gain', 'gini_index']:
-#     tree = DecisionTree(criterion=criteria,max_depth=10) #Split based on Inf. Gain
-#     tree.fit(X, y)
-#     y_hat = tree.predict(X)
-#     tree.plot()
-#     print('Criteria :', criteria)
-#     print('RMSE: ', rmse(y_hat, y))
-#     print('MAE: ', mae(y_hat, y))
-#
-# # Test case 2
-# # Real Input and Discrete Output
-#
-# N = 30
-# P = 5
-# X = pd.DataFrame(np.random.randn(N, P))
-# y = pd.Series(np.random.randint(P, size = N), dtype="category")
-#
-# for criteria in ['information_gain', 'gini_index']:
-#     tree = DecisionTree(criterion=criteria,max_depth=3) #Split based on Inf. Gain
-#     tree.fit(X, y)
-#     y_hat = tree.predict(X)
-#     tree.plot()
-#     print('Criteria :', criteria)
-#     print('Accuracy: ', accuracy(y_hat, y))
-#     for cls in y.unique():
-#         print('Precision: ', precision(y_hat, y, cls))
-#         print('Recall: ', recall(y_hat, y, cls))
-#
-#
-# # Test case 3
-# # Discrete Input and Discrete Output
-#
-# N = 30
-# P = 5
-# X = pd.DataFrame({i:pd.Series(np.random.randint(P, size = N), dtype="category") for i in range(5)})
-# y = pd.Series(np.random.randint(P, size = N), dtype="category")
-#
-# for criteria in ['information_gain', 'gini_index']:
-#     tree = DecisionTree(criterion=criteria,max_depth=3) #Split based on Inf. Gain
-#     tree.fit(X, y)
-#     y_hat = tree.predict(X)
-#     tree.plot()
-#     print('Criteria :', criteria)
-#     print('Accuracy: ', accuracy(y_hat, y))
-#     for cls in y.unique():
-#         print('Precision: ', precision(y_hat, y, cls))
-#         print('Recall: ', recall(y_hat, y, cls))
-#
-# # Test case 4
-# # Discrete Input and Real Output
-#
-# N = 30
-# P = 5
-# X = pd.DataFrame({i:pd.Series(np.random.randint(P, size = N), dtype="category") for i in range(5)})
-# y = pd.Series(np.random.randn(N))
-#
-# for criteria in ['information_gain', 'gini_index']:
-#     tree = DecisionTree(criterion=criteria,max_depth=3) #Split based on Inf. Gain
-#     tree.fit(X, y)
-#     y_hat = tree.predict(X)
-#     tree.plot()
-#     print('Criteria :', criteria)
-#     print('RMSE: ', rmse(y_hat, y))
-#     print('MAE: ', mae(y_hat, y))
-
-# Learn DTs 
-# ...
-# 
-# Function to calculate average time (and std) taken by fit() and predict() for different N and P for 4 different cases of DTs
-# ...
-# Function to plot the results
-# ..
-# Function to create fake data (take inspiration from usage.py)
-# ...
-# ..other functions
+plt.show()

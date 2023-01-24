@@ -34,13 +34,8 @@ def plot_data(df_fold_depth: pd.DataFrame,case:str):
     ax.set_ylabel('M')
     ax.set_zlabel('Predict Time')
 
-
-
-    print(df_fold_depth)
-
-
-max_samples=10
-max_features=5
+max_samples=50
+max_features=10
 max_depth=5 # fixed value
 
 df_fold_depth = pd.DataFrame(columns=['N','M','Fit Time','Predict Time'])
@@ -50,7 +45,7 @@ for case in case_list:
     df_fold_depth=pd.DataFrame(columns=['N','M','Fit Time','Predict Time'])
     for n in range(2,max_samples):
         for m in range(1,max_features):
-            print("Case: ",case," N: ",n," M: ",m)
+            # print("Case: ",case," N: ",n," M: ",m)
             if(case=="Real_Real"):
                 X = pd.DataFrame(np.random.randn(n, m))
                 y = pd.Series(np.random.randn(n))
@@ -84,6 +79,5 @@ for case in case_list:
             predict_time_total=predict_end-predict_begin
             df_fold_depth = df_fold_depth.append({'N': n, 'M': m,'Fit Time':total_fit_time,'Predict Time':predict_time_total},ignore_index=True)
     plot_data(df_fold_depth,case)
-
 
 plt.show()

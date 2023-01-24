@@ -48,7 +48,10 @@ class DecisionTree:
         if (node.isLeaf == True):
             return node.output
         else:
-            return self.traverse_discrete_input(node.children[data[node.atrribute]], data)
+            if(data[node.atrribute] in node.children):
+                return self.traverse_discrete_input(node.children[data[node.atrribute]], data)
+            else:
+                return "Error"
 
     def traverse_real_input(self, node: Node, data: dict):
         if (node.isLeaf == True):
